@@ -107,7 +107,7 @@ DECL TryNode* try_walk_pref(TryNode* n, const i8* key) {
   return root;
 }
 
-DECL void try_node_free(TryNode* node) {
+void try_node_free(TryNode* node) {
 
   if (!node) return;
   for (u32 i = 0; i < ASCII_LEN; i++) {

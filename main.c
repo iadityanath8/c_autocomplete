@@ -12,20 +12,21 @@ int cmpHeapItem(const void* a, const void* b) {
     return 0;
 }
 
-void autocomplete(TryNode* node, const i8* key, u32 K) {
-
+char* autocomplete(TryNode* node, const i8* key, u32 K) {
     TryNode* root = try_walk_pref(node, key);
 
     if (!root) {
-        log_debug("No suggestions for '%s'\n", key);
-        return;
+        char* out = malloc(64);
+        snprintf(out, 64, "No suggestions");
+        return out;
     }
 
     Heap* h = &root->_topK;
 
     if (h->count == 0) {
-        log_debug("No suggestions\n");
-        return;
+        char* out = malloc(64);
+        snprintf(out, 64, "No suggestions");
+        return out;
     }
 
     if (K > h->count)
@@ -40,17 +41,35 @@ void autocomplete(TryNode* node, const i8* key, u32 K) {
     qsort(temp, h->count,
           sizeof(HeapItem), cmpHeapItem);
 
-    log_debug("Suggestions for '%s':\n", key);
+
+
+    size_t buf_size = K * WORD;
+    char* out = malloc(buf_size);
+
+    if (!out) {
+        free(temp);
+        return NULL;
+    }
+
+    out[0] = '\0';
+
+    char line[256];
 
     for (u32 i = 0; i < K; i++) {
-        printf("%s (%u)\n",
-               temp[i].word,
-               temp[i].freq);
+        snprintf(
+            line,
+            sizeof(line),
+            "%s (%u)\n",
+            temp[i].word,
+            temp[i].freq
+        );
+
+        strncat(out, line, buf_size - strlen(out) - 1);
     }
 
     free(temp);
+    return out;
 }
-
 
 void load_data_from_file(const i8 *filename, TryNode *root) {
   FILE *fp = fopen((const i8 *)filename, "r");
@@ -72,7 +91,6 @@ void load_data_from_file(const i8 *filename, TryNode *root) {
   }
   fclose(fp);
 }
-
 
 void try_save_node(FILE *fp, TryNode *node) {
   fwrite(&node->_freq, sizeof(u32), 1, fp);
