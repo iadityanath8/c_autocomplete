@@ -1,6 +1,6 @@
-#ifndef TRY_H 
-#define TRY_H 
-#define ASCII_LEN 256
+#ifndef  TRY_H 
+#define  TRY_H 
+#define  ASCII_LEN 256
 #include "./base/types.h"
 #include "./base/heap.h"
 #include <stdbool.h>
@@ -12,13 +12,13 @@ typedef struct TryNode TryNode;
 
 struct TryNode {
   TryNode* _childrens[ASCII_LEN];
-  u32 _freq;
-  u32 _prefix_count;
-  u32 _child_count;
+  u32      _freq;
+  u32      _prefix_count;
+  u32      _child_count;
 
   /** TOPK heap for topk per node optimization **/
-  Heap _topK; 
-  bool _end;
+  Heap     _topK; 
+  bool     _end;
 };
 
 DECL void updateTopK(Heap *h, const i8 *word, u32 freq, u32 TOP_K) {
@@ -64,7 +64,6 @@ DECL TryNode* try_create_node() {
   return n;
 }
 
-
 DECL void try_insert_key(TryNode* root, const i8* key) {
   auto node = root;
   for (u32 i = 0; key[i] != '\0'; i++) {
@@ -79,13 +78,12 @@ DECL void try_insert_key(TryNode* root, const i8* key) {
 
   node->_freq++;
   node->_end = true;
-
   u32 word_freq = node->_freq;  // Get the actual frequency
 
   node = root;
   for (u32 i = 0; key[i] != '\0'; i++) {
     node = node->_childrens[(u32)key[i]];
-    updateTopK(&node->_topK, key, word_freq, 5);
+    updateTopK(&node->_topK, key, word_freq, 50);
   }
 }
 
@@ -117,7 +115,6 @@ DECL void try_node_free(TryNode* node) {
       try_node_free(node->_childrens[i]);
     }
   }
-
   heap_free(&node->_topK);
   free(node);
 }

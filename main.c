@@ -2,21 +2,53 @@
 #include "./base/heap.h"
 #include "./base/logger.h"
 
-void autocomplete(TryNode* node, const i8* key) {
-  auto root = try_walk_pref(node,key);
-  if (!root) {
+int cmpHeapItem(const void* a, const void* b) {
 
-    log_debug("No suggestions for '%s'\n", key);
-    return;
-  }
-  Heap* h = &root->_topK;
-  log_debug("suggestions: %d\n",node->_freq); 
-  printf("%d\n",h->items[0].freq);
-  for (u32 i = 0; i < h->count;i++) {
-    log_debug("%s (%u)\n",
-        h->items[i].word,
-        h->items[i].freq);
-  }
+    const HeapItem* x = (const HeapItem*)a;
+    const HeapItem* y = (const HeapItem*)b;
+
+    if (y->freq > x->freq) return 1;
+    if (y->freq < x->freq) return -1;
+    return 0;
+}
+
+void autocomplete(TryNode* node, const i8* key, u32 K) {
+
+    TryNode* root = try_walk_pref(node, key);
+
+    if (!root) {
+        log_debug("No suggestions for '%s'\n", key);
+        return;
+    }
+
+    Heap* h = &root->_topK;
+
+    if (h->count == 0) {
+        log_debug("No suggestions\n");
+        return;
+    }
+
+    if (K > h->count)
+        K = h->count;
+
+    HeapItem* temp =
+        malloc(sizeof(HeapItem) * h->count);
+
+    memcpy(temp, h->items,
+           sizeof(HeapItem) * h->count);
+
+    qsort(temp, h->count,
+          sizeof(HeapItem), cmpHeapItem);
+
+    log_debug("Suggestions for '%s':\n", key);
+
+    for (u32 i = 0; i < K; i++) {
+        printf("%s (%u)\n",
+               temp[i].word,
+               temp[i].freq);
+    }
+
+    free(temp);
 }
 
 
@@ -88,10 +120,8 @@ TryNode *trie_load_node(FILE *fp) {
   heap_init(&node->_topK);
 
   for (u32 i = 0; i < hcount; i++) {
-
     HeapItem item;
     fread(&item, sizeof(HeapItem), 1, fp);
-
     heap_insert(&node->_topK, item);
   }
 
@@ -103,7 +133,6 @@ TryNode *trie_load_node(FILE *fp) {
       break;
     node->_childrens[idx] = trie_load_node(fp);
   }
-
   return node;
 }
 
@@ -132,9 +161,20 @@ TryNode *try_load(const char *filename) {
 }
 
 
-int main() {
-  auto n = try_load("trycorpus.he");
-  autocomplete(n, "sh");
+int main(int argc, char* argv[]) {
+  auto n = try_load("./corpuses/trycorpus.he");
+
+  if (argc <= 2) {
+    log_error("Error its an command line argument");
+    return 1;
+  }
+
+  i8* s = argv[1];
+  u32 _si = atoi(s);
+  i8* s_ = argv[2];
+
+  autocomplete(n, s_, _si);
+  try_node_free(n);
   return 0;  
 }
 
