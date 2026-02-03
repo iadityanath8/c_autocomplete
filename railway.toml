@@ -1,6 +1,0 @@
-[build]
-builder = "docker"
-
-[deploy]
-startCommand = "python app.py"
-port = 8080
